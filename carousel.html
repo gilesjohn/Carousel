@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <style>
+            html, body {
+                background: #aaa;
+            }
+            * {
+                margin: 0;
+                padding: 0;
+            }
+            .carousel {
+                height: 100%;
+                width: 100%;
+            }
+            .carousel-card {
+                border: 1px solid #666;
+                background: #fff;
+                width: 20vw;
+                height: 30vh;
+                position: absolute;
+                top: 35vh;
+                left: 40vw;
+            }
+        </style>
+    </head>
+    <body>
+        <button onclick="showNext()">Show Next</button>
+        <button onclick="showPrev()">Show Prev</button>
+        <div class="carousel">
+            <div class="carousel-card">
+                1
+            </div>
+            <div class="carousel-card">
+                2
+            </div>
+            <div class="carousel-card">
+                3
+            </div>
+            <div class="carousel-card">
+                4
+            </div>
+            <div class="carousel-card">
+                5
+            </div>
+            <div class="carousel-card">
+                6
+            </div>
+            <div class="carousel-card">
+                7
+            </div>
+            <div class="carousel-card">
+                8
+            </div>
+        </div>
+    </body>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+    <script>
+
+        const WIDTH_MODIFIER = 300;
+        const HEIGHT_MODIFIER = 120;
+        
+        // scale = (cosAngle + SCALE_MAX_MODIFIER) / (SCALE_SLOPE_MODIFIER + SCALE_MAX_MODIFIER)
+        const SCALE_MAX_MODIFIER = 5; // Decrease to increase difference in size between front and back cards
+        const SCALE_SLOPE_MODIFIER = 1;
+
+        const FRAME_TIME = 20; // ms
+
+        const ALWAYS_ROTATE = false;
+
+        function Card(element, angle) {
+            this.element = element;
+            this.angle = angle;
+        }
+
+        function drawCards(cards) {
+            cards.forEach(function (card, index) {
+                let cosAngle = Math.cos(card.angle);
+                let y = cosAngle * HEIGHT_MODIFIER;
+                let x = Math.sin(card.angle) * WIDTH_MODIFIER;
+                let scale = (cosAngle + SCALE_MAX_MODIFIER) / (SCALE_SLOPE_MODIFIER + SCALE_MAX_MODIFIER);
+                let translateString = "translate(" + x.toFixed(4) + "px," + y.toFixed(4) + "px) scale(" + scale.toFixed(4) + ")";
+                card.element.style.transform = translateString;
+                card.element.style.zIndex = Math.round(scale * 100).toString();
+            });
+        }
+        
+        let cards;
+
+        let angleDiff;
+        $(function () {
+            
+            let cardElements = $(".carousel-card");
+            angleDiff = (Math.PI * 2) / cardElements.length;
+            cards = cardElements.map(function (i, element) {
+                return new Card(element, i * angleDiff);
+            }).get();
+            
+            drawCards(cards);
+
+            if (ALWAYS_ROTATE) {
+                setInterval(function () {
+                    cards.forEach(function (card) {
+                        card.angle += (Math.PI / 4) / 40;
+                        drawCards(cards);
+                    });
+                }, 20);
+            }
+
+            $(document).keydown(function (event) {
+                if (event.key == "ArrowRight") {
+                    showNext();
+                } else if (event.key == "ArrowLeft") {
+                    showPrev();
+                }
+            });
+        });
+        
+        function showNext() {
+            rotate(-(angleDiff/(Math.PI / 180)), 0.5);
+        }
+        function showPrev() {
+            rotate(angleDiff/(Math.PI / 180), 0.5);
+        }
+        
+        function rotate(degrees, time) {
+            let rads = degrees * (Math.PI / 180);
+            let radsPerS = rads/time;
+            let radsTurned = 0;
+
+            let interval = setInterval(function () {
+                let toTurn = radsPerS * (FRAME_TIME/1000);
+                let radsToGo = rads - radsTurned;
+                if (Math.abs(radsToGo) < Math.abs(toTurn)) {
+                    toTurn = radsToGo;
+                }
+                radsTurned += toTurn;
+                cards.forEach(function (card) {
+                    card.angle += toTurn;
+                    drawCards(cards);
+                });
+
+                if (
+                    (radsPerS >= 0 && radsTurned >= rads) || 
+                    (radsPerS < 0 && radsTurned <= rads)
+                ) {
+                    clearInterval(interval);
+                }
+            }, FRAME_TIME);
+        }
+    
+    </script>
+</html>
